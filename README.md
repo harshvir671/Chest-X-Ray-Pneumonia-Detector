@@ -6,7 +6,6 @@
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras-orange?style=for-the-badge&logo=tensorflow)
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-red?style=for-the-badge&logo=streamlit)
 ![XGBoost](https://img.shields.io/badge/XGBoost-Hybrid-green?style=for-the-badge)
-![MIT Manipal](https://img.shields.io/badge/MIT-Manipal-purple?style=for-the-badge)
 
 **A hybrid CNN + XGBoost deep learning system for automated pneumonia detection from chest X-ray images.**
 
