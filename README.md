@@ -6,7 +6,6 @@
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras-orange?style=for-the-badge&logo=tensorflow)
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-red?style=for-the-badge&logo=streamlit)
 ![MobileNet](https://img.shields.io/badge/MobileNet-Transfer%20Learning-blueviolet?style=for-the-badge)
-![MIT Manipal](https://img.shields.io/badge/MIT-Manipal-purple?style=for-the-badge)
 
 **A MobileNet-based deep learning system for automated pneumonia detection from chest X-ray images, with a comparative analysis of SVM, CNN, and XGBoost approaches.**
 
