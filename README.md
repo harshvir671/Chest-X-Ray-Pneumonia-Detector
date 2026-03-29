@@ -5,9 +5,10 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras-orange?style=for-the-badge&logo=tensorflow)
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-red?style=for-the-badge&logo=streamlit)
-![XGBoost](https://img.shields.io/badge/XGBoost-Hybrid-green?style=for-the-badge)
+![MobileNet](https://img.shields.io/badge/MobileNet-Transfer%20Learning-blueviolet?style=for-the-badge)
+![MIT Manipal](https://img.shields.io/badge/MIT-Manipal-purple?style=for-the-badge)
 
-**A hybrid CNN + XGBoost deep learning system for automated pneumonia detection from chest X-ray images.**
+**A MobileNet-based deep learning system for automated pneumonia detection from chest X-ray images, with a comparative analysis of SVM, CNN, and XGBoost approaches.**
 
 *School of Computer Engineering — Manipal Institute of Technology, Manipal*
 
@@ -17,10 +18,10 @@
 
 ## 📄 Research Paper
 
-This project is accompanied by a formal research report:  
+This project is accompanied by a formal comparative research report:  
 📎 **[Comparative Analysis of SVM, CNN, and XGBoost for Binary and Multiclass Classification](./Comparative_Analysis_of_SVM_CNN_and_XGBoost_for_Binary_and_Multiclass_Classification.pdf)**
 
-The paper covers the full methodology, dataset analysis, experimental results, and comparative evaluation of SVM, CNN, and hybrid CNN + XGBoost models.
+The paper benchmarks traditional ML (SVM, XGBoost) against deep learning (CNN) and hybrid approaches, providing the theoretical and experimental basis for the final model selection.
 
 ---
 
@@ -28,15 +29,7 @@ The paper covers the full methodology, dataset analysis, experimental results, a
 
 Pneumonia is one of the leading causes of mortality worldwide, especially in children and elderly patients. Manual interpretation of chest X-rays is time-consuming and prone to human error — particularly in resource-constrained healthcare settings.
 
-This project builds an **automated, AI-assisted diagnostic system** that classifies chest X-ray images as either **Normal** or **Pneumonia** using a hybrid deep learning + machine learning pipeline.
-
-### Key Highlights
-
-- **Hybrid architecture**: CNN (VGG16 transfer learning) for feature extraction + XGBoost for classification
-- **Best validation log loss**: 0.106 (outperforms standalone CNN and SVM)
-- **Convergence**: ~72 XGBoost boosting rounds — faster and more stable than CNN alone
-- **Streamlit web app** for real-time, demo-friendly inference
-- **Explainability**: Lung visualization overlay for demo-grade heatmap output
+This project builds an **automated, AI-assisted diagnostic system** that classifies chest X-ray images as either **Normal** or **Pneumonia**. The deployed model uses **MobileNet** trained from scratch on the Kaggle chest X-ray dataset. A comparative study (documented in the research paper) evaluates SVM, standalone CNN (VGG16), and hybrid CNN + XGBoost approaches to justify the final architecture.
 
 ---
 
@@ -44,12 +37,18 @@ This project builds an **automated, AI-assisted diagnostic system** that classif
 
 ```
 📦 IAI Project/
-├── app.py                        # Streamlit entry point
+├── app.py                         # Streamlit entry point
+├── chest-x-ray.ipynb              # Training notebook (MobileNet)
 ├── pneumonia_app/
-│   ├── inference.py              # Model loading, preprocessing, prediction, stats
-│   └── visuals.py                # Lung overlay image and stylized card UI
-├── pneumonia_model (2).keras     # Saved Keras model bundle
-├── requirements.txt              # Python dependencies
+│   ├── __init__.py
+│   ├── inference.py               # Model loading, preprocessing, prediction
+│   └── visuals.py                 # Lung overlay and stylized card UI
+├── pneumonia_model (2).keras/
+│   ├── config.json
+│   ├── metadata.json
+│   └── model.weights.h5           # Trained MobileNet weights
+├── .streamlit/config.toml
+├── requirements.txt
 └── README.md
 ```
 
@@ -59,15 +58,16 @@ This project builds an **automated, AI-assisted diagnostic system** that classif
 
 **Source:** [Chest X-Ray Images (Pneumonia) — Kaggle](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia)
 
-| Class | Images |
-|-------|--------|
-| Pneumonia | 3,875 |
-| Normal | 1,341 |
-| **Total** | **5,856** |
+| Split | Pneumonia | Normal | Total |
+|-------|-----------|--------|-------|
+| Train (80%) | 3,418 | 1,224 | 4,642 |
+| Test (15%) | 641 | 278 | 919 |
+| Val (5%) | 214 | 81 | 295 |
+| **Total** | **4,273** | **1,583** | **5,856** |
 
-- Format: Grayscale JPEG
-- Original resolution: ~2000 × 2000 px (resized during preprocessing)
-- Class imbalance handled via data augmentation
+- Format: Grayscale JPEG, resized to 224 × 224 px
+- Class imbalance handled via **sklearn `compute_class_weight`**
+- Random seed `10` for reproducibility
 
 **Visual patterns:**
 - 🔴 Pneumonia → opacities / white patches in lung regions
@@ -78,85 +78,95 @@ This project builds an **automated, AI-assisted diagnostic system** that classif
 ## ⚙️ Methodology
 
 ### Preprocessing Pipeline
-- Image resizing and normalization
-- Grayscale conversion
-- Noise reduction
-- Data augmentation (flips, rotations, zoom) to combat overfitting
+- Grayscale → RGB conversion (stacked channels for MobileNet compatibility)
+- Resize to 224 × 224 px using cubic interpolation
+- Normalize to [0, 1]
+- Data augmentation: rotation (7°), width/height shift (5%), shear (0.2), zoom (0.45), horizontal flip
 
-### Models Evaluated
-
-| Method | Feature Extraction | Interpretability | Compute Cost | Data Requirement |
-|--------|--------------------|-----------------|--------------|-----------------|
-| SVM | Manual | High | Low–Moderate | Small–Moderate |
-| CNN (VGG16) | Automatic | Low | High | Large |
-| **CNN + XGBoost (Hybrid)** | **Automatic + ML** | **Moderate–High** | **Moderate–High** | **Moderate–Large** |
-
-### System Pipeline (Hybrid Model)
+### Model Architecture — MobileNet
 
 ```
-Input X-Ray
+Input (224 × 224 × 3)
     ↓
-Load & Preprocess (resize, normalize, augment)
+MobileNet base (weights=None, trained from scratch)
     ↓
-Split Dataset (train / val / test)
+GlobalAveragePooling2D
     ↓
-VGG16 CNN — Feature Extraction
+Dense(1, activation='sigmoid')
     ↓
-Flatten Feature Maps → 1D Vectors
-    ↓
-XGBoost Classifier
-    ↓
-Predict: Normal / Pneumonia + Evaluate
+Predict: Normal (0) / Pneumonia (1)
 ```
+
+- Optimizer: Adam
+- Loss: Binary Cross-Entropy
+- Metrics: Binary Accuracy, MAE
+- Epochs: 64 | Batch size: 32
+- Hardware: 2× Tesla T4 GPUs
+
+### Comparative Analysis (Research Paper)
+
+The accompanying paper benchmarks three approaches on the same dataset:
+
+| Method | Feature Extraction | Interpretability | Compute Cost |
+|--------|--------------------|-----------------|--------------|
+| SVM | Manual | High | Low–Moderate |
+| CNN (VGG16) | Automatic | Low | High |
+| **CNN + XGBoost (Hybrid)** | **Automatic + ML** | **Moderate** | **Moderate–High** |
 
 ---
 
 ## 📈 Results
 
-### SVM
-- Best accuracy ~97% at 80/20 split
-- Performance degrades significantly with less training data — limited generalization
+### MobileNet — Deployed Model
 
-### CNN (Transfer Learning — VGG16)
-- Best split: 60/5/35
-- Validation Accuracy: **92.01%**
-- Validation Loss: **0.2316**
-- ROC-AUC: **~0.90**
-- ⚠️ Training instability: erratic validation loss spikes suggesting overfitting / learning rate issues
+| Metric | Score |
+|--------|-------|
+| Train Accuracy | **96.88%** |
+| Test Accuracy | **68.23%** |
+| Precision | **99.72%** |
+| Recall (Sensitivity) | **54.60%** |
+| Specificity | **99.64%** |
+| F1-Score | **70.56** |
+| AUC-ROC | **0.77** |
 
-### Hybrid CNN + XGBoost ✅ Best Model
+**Confusion Matrix:**
+```
+              Predicted Normal  Predicted Pneumonia
+Actual Normal       277                  1
+Actual Pneumonia    291                350
+```
 
-| Variant | Log Loss |
-|---------|----------|
-| Raw XGBoost | ~0.146 |
-| XGBoost + PCA | ~0.109 |
-| **CNN + XGBoost (Hybrid)** | **0.106** |
+> 📌 The model achieves near-perfect precision and specificity — meaning it almost never incorrectly flags a healthy patient. The lower recall indicates some pneumonia cases are missed, a known trade-off in high-precision medical classifiers.
 
-- Faster convergence: ~72 boosting rounds
-- Most stable training behavior
-- Recommended for real-world deployment
+### Comparative Results (from Research Paper)
+
+| Model | Key Metric | Notes |
+|-------|-----------|-------|
+| SVM | ~97% accuracy (80/20 split) | Degrades with less data |
+| CNN (VGG16) | 92.01% val accuracy, ROC-AUC ~0.90 | Training instability observed |
+| CNN + XGBoost | Log loss: **0.106** | Most stable, best generalization |
 
 ---
 
 ## 🖥️ Streamlit App
 
-A local Streamlit application ships with this repository, making it easy to run inference on any chest X-ray image.
+A local Streamlit application ships with this repository for real-time inference.
 
 ### Features
-- Loads saved Keras model (`pneumonia_model (2).keras`) with automatic fallback to `config.json` + `model.weights.h5`
+- Loads the trained MobileNet model (`pneumonia_model (2).keras`) with automatic fallback to `config.json` + `model.weights.h5`
 - Reproduces the full notebook preprocessing pipeline
-- Outputs: **Normal** vs **Pneumonia** prediction with confidence
-- Displays model architecture details and reported performance metrics
-- Renders a stylized lung visualization / heatmap overlay for demo explainability
+- Outputs: **Normal** vs **Pneumonia** prediction with confidence score
+- Displays model architecture and reported performance metrics
+- Renders a stylized lung visualization / heatmap overlay
 
-> ⚠️ The heatmap overlay is intended for demo explainability purposes, not medical-grade lesion localization.
+> ⚠️ The heatmap overlay is for demo explainability only, not medical-grade lesion localization.
 
 ### Running Locally
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/harshvir671/Chest-X-Ray-Pneumonia-Detector.git
+cd Chest-X-Ray-Pneumonia-Detector
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -165,32 +175,34 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Then open the local URL shown in your terminal (typically `http://localhost:8501`).
+Open `http://localhost:8501` in your browser.
 
 ---
 
 ## 🔬 Discussion
 
-### Why Hybrid Outperforms Standalone CNN
-- **Better generalization**: CNN extracts robust spatial features; XGBoost handles the classification boundary more stably
-- **Lower log loss**: Reduced prediction uncertainty — critical for medical applications
-- **Less overfitting**: Boosted trees regularize the final classification step
-- **Data efficiency**: High accuracy achievable even with moderate dataset sizes, since pneumonia vs. normal class boundaries are well-defined
+### Training Behavior
+The validation loss curve shows characteristic instability — smooth training loss alongside erratic validation spikes — consistent with the training instability noted in the research paper for standalone CNN models. This is largely attributable to the small validation set (295 images) and high learning rate sensitivity in MobileNet without pretrained weights.
+
+### Why High Precision but Lower Recall?
+The model is highly conservative: it almost never falsely flags a healthy patient (only 1 false positive out of 278 normal cases). However, it misses 291 out of 641 pneumonia cases. For a screening tool, this trade-off would need tuning via threshold adjustment.
 
 ### Limitations
-- Binary classification only (Normal vs. Pneumonia) — no multi-disease support
-- Performance tied to dataset quality and size
-- May not generalize equally across diverse patient demographics or equipment
+- Binary classification only — no multi-disease support
+- Validation set is very small (295 images), causing unstable val metrics
+- MobileNet trained from scratch rather than with ImageNet weights
+- May not generalize to X-rays from different equipment or demographics
 
 ---
 
 ## 🚀 Future Work
 
-- [ ] Train on larger, more diverse datasets
+- [ ] Use ImageNet pretrained MobileNet weights for better initialization
+- [ ] Add learning rate scheduling (e.g. ReduceLROnPlateau)
+- [ ] Increase validation set size for more stable evaluation
 - [ ] Extend to multi-class lung disease detection
+- [ ] Integrate Grad-CAM for medical-grade localization
 - [ ] Deploy as a production web or mobile application
-- [ ] Integrate medical-grade Grad-CAM for lesion localization
-- [ ] Hyperparameter tuning for further accuracy gains
 
 ---
 
